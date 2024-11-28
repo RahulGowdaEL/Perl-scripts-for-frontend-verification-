@@ -2,41 +2,50 @@
 use strict;
 use warnings;
 
-# Input and output file paths
-my $file1 = 'file1.v';       # File 1: Input file to modify
-my $file2 = 'file2.txt';     # File 2: Reference file
-my $output_file = 'output.v'; # Output file for modified contents
+# Input file paths
+my $file1 = 'input_file1.txt';  # File containing signal names to exclude
+my $file2 = 'input_file2.txt';  # File to parse and modify
 
-# Read signals from File 2 to determine exceptions
-my %exception_signals;
-open my $ref_fh, '<', $file2 or die "[Error] Cannot open $file2: $!";
-while (my $line = <$ref_fh>) {
+# Output file path
+my $output_file = 'output_file2.txt';
+
+# Hash to store signal names from File1
+my %exclude_signals;
+
+# Read File1 and store signal names in a hash for quick lookup
+open my $fh1, '<', $file1 or die "[Err] : Cannot open $file1: $!";
+while (my $line = <$fh1>) {
     chomp $line;
-    if ($line =~ /\\(\S+\[\*\].*)/) {  # Match signal pattern \signal_name[*]_*
-        $exception_signals{$1} = 1;
-    }
+    $exclude_signals{$line} = 1;  # Use signal name as a key
 }
-close $ref_fh;
+close $fh1;
 
-# Process File 1
-open my $in_fh, '<', $file1 or die "[Error] Cannot open $file1: $!";
-open my $out_fh, '>', $output_file or die "[Error] Cannot open $output_file: $!";
-while (my $line = <$in_fh>) {
+# Process File2 and write to the output file
+open my $fh2, '<', $file2 or die "[Err] : Cannot open $file2: $!";
+open my $out, '>', $output_file or die "[Err] : Cannot open $output_file: $!";
+
+while (my $line = <$fh2>) {
     chomp $line;
 
-    # Skip comment lines or blank lines
-    if ($line =~ /^\s*\/\// || $line =~ /^\s*$/) {
-        print $out_fh "$line\n";
-        next;
+    # Extract signal name from the line (assume the format is "wire \signal_name ...")
+    if ($line =~ /\b\\(\S+)/) {
+        my $signal_name = $1;
+
+        # Skip processing if the signal name is in the exclusion list
+        if (exists $exclude_signals{$signal_name}) {
+            print $out "$line\n";  # Write the line as-is
+            next;
+        }
     }
 
-    # Process line, checking for exceptions
-    $line =~ s/\\(\S+)/exists $exception_signals{$1} ? "\\$1" : $1/ge;
+    # Remove backslashes from the line if not excluded
+    $line =~ s/\\//g;
 
-    # Write modified line to the output file
-    print $out_fh "$line\n";
+    # Write the modified line to the output file
+    print $out "$line\n";
 }
-close $in_fh;
-close $out_fh;
 
-print "Processing completed. Modified file saved as $output_file.\n";
+close $fh2;
+close $out;
+
+print "[Done] : Processed $file2 and created $output_file.\n";
