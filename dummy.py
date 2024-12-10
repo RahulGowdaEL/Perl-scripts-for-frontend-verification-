@@ -1,56 +1,73 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
+import os
+import argparse
+import logging
+import numpy as np
 
-# Define input and output file paths
-my $input_file = 'input.log';   # Replace with your actual input file
-my $output_file = 'voltage_log.txt';
+# Setup logging configuration
+logging.basicConfig(format='%(asctime)s : %(levelname)s : [%(filename)s:%(lineno)d]: %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+NaN = np.nan
 
-# Hash to store unique voltage transitions for each primary power net and power domain
-my %voltage_data;
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Sanity check liblist for inaccurate demet paths for PA simulation")
+    parser.add_argument('-liblist', '--liblist', required=True, type=str, help="Provide full path for the Liblist file")
+    parser.add_argument('-out_dir', '--output_dir', default=os.getcwd(), type=str, help="Path where report is dumped")
+    parser.add_argument('-demet_list', '--demet_list', type=str, help='Provide demet std cell signature', required=True)
+    return parser.parse_args()
 
-# Open the input file for reading
-open(my $in_fh, '<', $input_file) or die "Could not open file '$input_file': $!";
+def sanity_check(liblist, out_dir, std_cells):
+    # Read library list file
+    try:
+        with open(liblist, 'r') as fp:
+            libs = fp.read().splitlines()
+    except Exception as e:
+        logger.error(f"Failed to read liblist file: {e}")
+        return
 
-# Process each line of the input file
-while (my $line = <$in_fh>) {
-    chomp($line);
+    # Find libraries containing demet cells
+    demet_libs = [lib for lib in libs if any(demet in lib for demet in std_cells)]
 
-    # Match lines containing "[LP_PPN_VALUE_CHANGE]"
-    if ($line =~ /\[(\d+) fs\] \[INFO\] \[LP_PPN_VALUE_CHANGE\] Voltage of the primary power net '(.+?)' of power domain '(.+?)' changed from ([\d.]+ V) to ([\d.]+ V)/) {
-        my $timestamp = $1;       # Extract the timestamp
-        my $net_name = $2;        # Extract the primary power net name
-        my $power_domain = $3;    # Extract the power domain
-        my $voltage_from = $4;    # Extract the starting voltage
-        my $voltage_to = $5;      # Extract the ending voltage
+    # Identify problematic libraries
+    report_list = [lib for lib in demet_libs if "partl_ret_demet" not in lib]
+    report_list = list(set(report_list))  # Remove duplicates
 
-        # Initialize an entry if the net and power domain combination is new
-        $voltage_data{$net_name}{$power_domain} //= [];
+    # Logging and reporting
+    if not report_list:
+        logger.info("Liblist appears to be correct for the given std cells")
+    else:
+        logger.error("Below Lib files may have incorrect paths. Please review:")
+        for lib in report_list:
+            print(lib)
+        # Write the report to an error log
+        try:
+            error_log_path = os.path.join(out_dir, 'error.log')
+            with open(error_log_path, 'w') as fp:
+                fp.write('\n'.join(report_list))
+            logger.info(f"Error log written to {error_log_path}")
+        except Exception as e:
+            logger.error(f"Failed to write error log: {e}")
 
-        # Append the voltage transition if it is unique
-        my $transition = "$voltage_from --> $voltage_to";
-        unless (grep { $_ eq $transition } @{$voltage_data{$net_name}{$power_domain}}) {
-            push @{$voltage_data{$net_name}{$power_domain}}, $transition;
-        }
-    }
-}
+if __name__ == '__main__':
+    # Parse arguments
+    args = parse_arguments()
+    liblist = args.liblist
+    out_dir = args.output_dir
+    demet_list = args.demet_list
 
-close($in_fh);
+    # Validate demet list file
+    if os.path.isfile(demet_list):
+        try:
+            with open(demet_list, 'r') as fp:
+                std_cells = fp.read().splitlines()
+                std_cells = [cell.strip() for cell in std_cells if cell.strip()]  # Remove spaces and empty lines
+                std_cells = ['_' + cell.split('_')[0] for cell in std_cells]  # Add underscore and take prefix
+                std_cells = list(set(std_cells))  # Remove duplicates
+        except Exception as e:
+            logger.error(f"Failed to process demet list: {e}")
+            sys.exit(1)
+    else:
+        logger.error("Error: Demet list file doesn't exist")
+        sys.exit(1)
 
-# Open the output file for writing
-open(my $out_fh, '>', $output_file) or die "Could not open file '$output_file': $!";
-
-# Write the unique transitions to the output file
-foreach my $net (sort keys %voltage_data) {
-    foreach my $domain (sort keys %{$voltage_data{$net}}) {
-        print $out_fh "Primary Power Net: $net\n";
-        print $out_fh "Power Domain: $domain\n";
-        print $out_fh "Transitions:\n";
-        print $out_fh join(" --> ", map { (split / --> /)[0] } @{$voltage_data{$net}{$domain}}), "\n";
-        print $out_fh join(" --> ", map { (split / --> /)[1] } @{$voltage_data{$net}{$domain}}), "\n\n";
-    }
-}
-
-close($out_fh);
-
-print "Voltage transitions with power domains have been written to '$output_file'.\n";
+    # Perform sanity check
+    sanity_check(liblist, out_dir, std_cells)
