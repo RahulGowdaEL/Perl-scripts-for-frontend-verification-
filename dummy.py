@@ -1,73 +1,66 @@
-import os
-import argparse
-import logging
-import numpy as np
+#!/usr/bin/perl
+use strict;
+use warnings;
 
-# Setup logging configuration
-logging.basicConfig(format='%(asctime)s : %(levelname)s : [%(filename)s:%(lineno)d]: %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
-NaN = np.nan
+my $input_file = 'center_hm_with_demet.txt';
+my @user_strings = qw(async_rst upf_simstate async_in sync_out);  #no of signals in the heirarchy
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="Sanity check liblist for inaccurate demet paths for PA simulation")
-    parser.add_argument('-liblist', '--liblist', required=True, type=str, help="Provide full path for the Liblist file")
-    parser.add_argument('-out_dir', '--output_dir', default=os.getcwd(), type=str, help="Path where report is dumped")
-    parser.add_argument('-demet_list', '--demet_list', type=str, help='Provide demet std cell signature', required=True)
-    return parser.parse_args()
+my $output_file = 'assertion_output.sv';
+open(my $out_fh, '>', $output_file) or die "Could not open file '$output_file': $!";
+my @processed_lines;
 
-def sanity_check(liblist, out_dir, std_cells):
-    # Read library list file
-    try:
-        with open(liblist, 'r') as fp:
-            libs = fp.read().splitlines()
-    except Exception as e:
-        logger.error(f"Failed to read liblist file: {e}")
-        return
+open(my $fh, '<', $input_file) or die "Could not open file '$input_file': $!";while (my $line = <$fh>) {
+    chomp $line;
+    $line =~ s/^([^ ]*).*/$1/;  #first white space
+    $line =~ s/\//./g;
 
-    # Find libraries containing demet cells
-    demet_libs = [lib for lib in libs if any(demet in lib for demet in std_cells)]
+   if ($line =~ /u_demet_ares/) {
+        $line =~ s/(u_demet_ares).*/$1/; #keeping the desired keyword will remove the remaining 
+	}
 
-    # Identify problematic libraries
-    report_list = [lib for lib in demet_libs if "partl_ret_demet" not in lib]
-    report_list = list(set(report_list))  # Remove duplicates
+  #  $line = "ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_gen_slice_ddr_slice_ch.u_ddr_slice_ch.u_ddrss_ch02_hm.u_ddrss_ch0.u_mach9_hm.$line";
+    $line = "ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.$line";     #glymur-r2
+    $line =~ s/u_demet_ares/u_demet_model.gen_model2.model2.demet_ares.u_demet_ares/g;
 
-    # Logging and reporting
-    if not report_list:
-        logger.info("Liblist appears to be correct for the given std cells")
-    else:
-        logger.error("Below Lib files may have incorrect paths. Please review:")
-        for lib in report_list:
-            print(lib)
-        # Write the report to an error log
-        try:
-            error_log_path = os.path.join(out_dir, 'error.log')
-            with open(error_log_path, 'w') as fp:
-                fp.write('\n'.join(report_list))
-            logger.info(f"Error log written to {error_log_path}")
-        except Exception as e:
-            logger.error(f"Failed to write error log: {e}")
+    foreach my $user_string (@user_strings) {
+        push @processed_lines, "$line.$user_string"; 
+	}
+}
 
-if __name__ == '__main__':
-    # Parse arguments
-    args = parse_arguments()
-    liblist = args.liblist
-    out_dir = args.output_dir
-    demet_list = args.demet_list
+close($fh);
 
-    # Validate demet list file
-    if os.path.isfile(demet_list):
-        try:
-            with open(demet_list, 'r') as fp:
-                std_cells = fp.read().splitlines()
-                std_cells = [cell.strip() for cell in std_cells if cell.strip()]  # Remove spaces and empty lines
-                std_cells = ['_' + cell.split('_')[0] for cell in std_cells]  # Add underscore and take prefix
-                std_cells = list(set(std_cells))  # Remove duplicates
-        except Exception as e:
-            logger.error(f"Failed to process demet list: {e}")
-            sys.exit(1)
-    else:
-        logger.error("Error: Demet list file doesn't exist")
-        sys.exit(1)
+foreach my $line (@processed_lines) {  
+#print $out_fh "$line\n";
+	}
 
-    # Perform sanity check
-    sanity_check(liblist, out_dir, std_cells)
+my $assertion_count = 1;
+my $group_size = scalar @user_strings;  
+
+    print $out_fh "import pwr_tb_pkg::*;\n";
+    print $out_fh "import quvm_addons_pkg::*;\nimport UPF::*;\n\n";
+    print $out_fh "logic demet_assertion_disable = 1'b0;\nlogic demet_assertion_triggered;\nupfHandleT snhandle;\nupfBooleanT mirrorstatus;\nupfSupplyObjT tb_upf;\nupfSupplyObjT tb_vdd_ddrss_mach9_int;\nupfBooleanT status;\n";
+    print $out_fh "logic demet_assertion_disable = 1'b0;\n\n";
+    print $out_fh "initial \nbegin\ndemet_assertion_disable = 1'b1;\n#110ns;\ndemet_assertion_disable = 1'b0;\nend\n\n";
+    print $out_fh "initial\n  begin\nsnhandle = upf_get_handle_by_name(\"\/u_ddr_ss_synthetic_top_wrapper_dut_0\/u_ddr_slice_hm_0\/u_gen_slice_ddr_slice_ch\/u_ddr_slice_ch\/u_ddrss_ch02_hm\/u_ddrss_ch0\/u_mach9_hm\/vdd_ddrss_mach9_int\@upfSupplyNetT\");\n";
+    print $out_fh "mirrorstatus = upf_create_object_mirror(upf_query_object_pathname(snhandle),\"tb_upf\");\n  if(mirrorstatus == 1)\n\t\$display(\"SV-API_demet: %s\", upf_query_object_pathname(snhandle));\n  end\n";
+
+
+#assertions creation
+for (my $i = 0; $i < scalar(@processed_lines);$i += $group_size) {
+
+    print $out_fh "\nproperty demet_assertion$assertion_count;\n"; 
+    print $out_fh "\@(ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.dpcc_ddrss_top_xo_clk) disable iff (demet_assertion_disable)\n\n";
+    print $out_fh "((\$past(tb_upf.current_value.state[0]) == 0) && ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.u_dpcc_cbc_glue.u_dpcc_shub_gdsc.gds_enr == 1 && \$fell($processed_lines[$i])) |-> ($processed_lines[$i+2] == $processed_lines[$i+3]);\n"; 
+    print $out_fh "endproperty: demet_assertion$assertion_count\n\n";
+    print $out_fh "assert_demet_assertion$assertion_count: assert property(demet_assertion$assertion_count)\n"; 
+    print $out_fh "    else \$error(\"Assertion error: demet_assertion$assertion_count failed at %t\",\$time);\n\n";
+    print $out_fh "\t always @(posedge tb_upf.current_value.state or posedge demet_assertion_disable) begin\n";
+    print $out_fh "\t\t if (demet_assertion_disable) begin\n";
+    print $out_fh "\t\t\t demet_assertion_triggered <= 0;\n";
+    print $out_fh "\t\t end\n\t\t else if ((ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.u_dpcc_cbc_glue.u_dpcc_shub_gdsc.gds_enr) && ($processed_lines[$i]) == 0) begin\n";
+    print $out_fh "\t\t\t \$uvm_warning(\"Warning_demet_sync: demet_asertions.sv\", \$sformatf(\"demet_assertion$assertion_count condition was never met during the simulation.\"));\n\t end\nend\n\n";
+    $assertion_count++;
+    }
+
+close($out_fh);
+print "Assertions have been written to $output_file\n";
