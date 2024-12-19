@@ -1,4 +1,3 @@
-
 #!/usr/bin/perl
 use strict;
 use warnings;
@@ -26,7 +25,7 @@ while (my $line = <$fh>) {
 
     if ($line =~ /demet_ares/) {
         $line =~ s/^([^ ]*).*/$1/;
-        $line =~ s/\//./g
+        $line =~ s/\//./g;
         $line =~ s/(u_demet_ares).*/$1/;
         $line =~ s/u_demet_ares/u_demet_model.gen_model2.model2.demet_ares.u_demet_ares/g;
         $line = "ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.$line";
@@ -50,10 +49,10 @@ print $out_fh "mirrorstatus = upf_create_object_mirror(upf_query_object_pathname
 
 foreach my $line (@processed_lines) {
     if ($line =~ /u_gen_slice_ddr_slice_ch/) {
-        print_assertions($out_fh, $line, $assertion_count);
+        generate_assertions($out_fh, $line, $assertion_count);
         $assertion_count++;
     } elsif ($line =~ /u_ddr_slice_center/) {
-        print_assertions($out_fh, $line, $assertion_count);
+        generate_assertions($out_fh, $line, $assertion_count);
         $assertion_count++;
     }
 }
@@ -61,19 +60,21 @@ foreach my $line (@processed_lines) {
 close($out_fh);
 print "Assertions have been written to $output_file\n";
 
-sub print_assertions {
-for (my $i = 0; $i < scalar(@processed_lines);$i += $group_size) {
+sub generate_assertions {
     my ($fh, $line, $count) = @_;
     print $fh "\nproperty demet_assertion$count;\n";
-    print $fh "\@(ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.i_glpi_cc_ddrss_lpinoc_bus_clk) disable iff (demet_assertion_disable)\n\n";
-    print $out_fh "((\$past(tb_upf.current_value.state[0]) == 0) && ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.u_dpcc_cbc_glue.u_dpcc_shub_gdsc.gds_enr == 1 && \$fell($processed_lines[$i])) |-> ($processed_lines[$i+2] == $processed_lines[$i+3]);\n"; 
-    print $out_fh "endproperty: demet_assertion_center_hm$assertion_count\n\n";
+    print $fh "\@(posedge ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.i_glpi_cc_ddrss_lpinoc_bus_clk) disable iff (demet_assertion_disable)\n";
+    print $fh "    ((\$past(tb_upf.current_value.state[0]) == 0) && ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.u_dpcc_cbc_glue.u_dpcc_shub_gdsc.gds_enr == 1 && \$fell($line)) |-> ($line.async_in == $line.sync_out);\n";
+    print $fh "endproperty: demet_assertion$count\n\n";
+
     print $fh "assert_demet_assertion$count: assert property(demet_assertion$count)\n";
     print $fh "    else \$error(\"Assertion error: demet_assertion$count failed at %t\",\$time);\n\n";
-    print $fh "\t always @(negedge $processed_lines[$i+3] or posedge demet_assertion_disable) begin\n";
-    print $fh "\t\t if (demet_assertion_disable) begin\n";
-    print $fh "\t\t\t demet_assertion_triggered <= 0;\n";
-    print $fh "\t\t end\n\t\t else if ((ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.u_dpcc_cbc_glue.u_dpcc_shub_gdsc.gds_enr) || ($line) == 0) begin\n";
-    print $fh "\t\t\t \$uvm_warning(\"Warning_demet_sync: demet_asertions.sv\", \$sformatf(\"demet_assertion$count condition was never met during the simulation.\"));\n\t end\nend\n\n";
-}
+
+    print $fh "\talways @(negedge $line.sync_out or posedge demet_assertion_disable) begin\n";
+    print $fh "\t\tif (demet_assertion_disable) begin\n";
+    print $fh "\t\t\tdemet_assertion_triggered <= 0;\n";
+    print $fh "\t\tend else if (ddr_ss_synthetic_top_wrapper_dv.u_ddr_ss_synthetic_top_wrapper_dut_0.u_ddr_slice_hm_0.u_ddr_slice_center.u_dpcc.u_dpcc_cbc_glue.u_dpcc_shub_gdsc.gds_enr) begin\n";
+    print $fh "\t\t\t\$uvm_warning(\"Warning_demet_sync: Assertion condition for demet_assertion$count not met during simulation.\");\n";
+    print $fh "\t\tend\n";
+    print $fh "\tend\n";
 }
