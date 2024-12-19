@@ -15,10 +15,10 @@ open my $fh_proc, '>', $processed_file or die "Cannot open $processed_file: $!";
 # Step 1: Extract exclusion signals
 my %exclusions;
 while (my $line = <$fh_in>) {
-    if ($line =~ /^\s*wire\s+\\(.+);/) {  # Match lines like 'wire \signal_name;'
-        my $signal = $1;
-        $signal =~ s/\s+//g;             # Remove spaces
-        $exclusions{"\\$signal"} = 1;   # Store in exclusions hash
+    if ($line =~ /^\s*wire\s+\\(\S+);/) {  # Match lines like 'wire \signal_name;'
+        my $signal = $1;                  # Extract the signal name
+        $exclusions{"\\$signal"} = 1;    # Store in exclusions hash
+        print $fh_excl $line;            # Write to exclusions file
     }
 }
 
@@ -29,21 +29,23 @@ seek $fh_in, 0, 0;
 while (my $line = <$fh_in>) {
     chomp($line);
 
-    # Check if line contains signals and is excluded
-    if ($line =~ /\\(\S+)/) {  # Match any line containing '\signal_name'
-        my $signal = $1;       # Extract signal name
-        if (exists $exclusions{"\\$signal"}) {
-            # If signal is excluded, write to exclusions file
-            print $fh_excl "$line\n";
-            next;
+    # Skip processing for lines that include excluded signals
+    my $is_excluded = 0;
+    foreach my $signal (keys %exclusions) {
+        if ($line =~ /\Q$signal\E/) {  # Check if the line contains the excluded signal
+            $is_excluded = 1;
+            last;
         }
     }
 
-    # Replace backslashes with parentheses for non-excluded lines
-    $line =~ s/\\/\(/g;
+    if ($is_excluded) {
+        print $fh_proc "$line\n";  # Write excluded lines unchanged to processed file
+        next;
+    }
 
-    # Write the processed line to the processed file
-    print $fh_proc "$line\n";
+    # Replace backslashes with parentheses for other lines
+    $line =~ s/\\/\(/g;
+    print $fh_proc "$line\n";  # Write processed lines to processed file
 }
 
 # Close files
