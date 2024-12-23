@@ -1,58 +1,63 @@
-use strict;
-use warnings;
+import gzip
+import os
+import re
+import sys
 
-# Prompt for input file
-print "Enter the input file name: ";
-chomp(my $input_file = <STDIN>);
-my $exclusion_file = "exclusions.v";
-my $processed_file = "processed.v";
+def parse_netlist(netlist_path, output_instances_path):
+    instance_pattern = re.compile(r"^\s{4}(\w+)\s+\w+\s*\(")
+    in_module_block = False
+    instances = set()
 
-# Open files
-open my $fh_in, '<', $input_file or die "Cannot open $input_file: $!";
-open my $fh_excl, '>', $exclusion_file or die "Cannot open $exclusion_file: $!";
-open my $fh_proc, '>', $processed_file or die "Cannot open $processed_file: $!";
+    with open(netlist_path, "r") as netlist_file:
+        for line in netlist_file:
+            if "// Module instantiation" in line:
+                in_module_block = True
+            elif "endmodule" in line:
+                in_module_block = False
+            elif in_module_block:
+                match = instance_pattern.match(line)
+                if match:
+                    instances.add(match.group(1))
 
-# Step 1: Extract exclusion signals
-my %exclusions;
-while (my $line = <$fh_in>) {
-    if ($line =~ /^\s*wire\s+\\(\S+);/) {  # Match lines like 'wire \signal_name;'
-        my $signal = $1;                  # Extract the signal name
-        $exclusions{"\\$signal"} = 1;    # Store in exclusions hash
-        print $fh_excl $line;            # Write to exclusions file
-    }
-}
+    with open(output_instances_path, "w") as out_file:
+        out_file.write("\n".join(sorted(instances)))
+    print(f"Extracted {len(instances)} instances to {output_instances_path}")
+    return instances
 
-# Rewind the file to process it again
-seek $fh_in, 0, 0;
+def find_instances_in_libs(instances, libs_file_path, output_matches_path):
+    matches = []
+    with open(libs_file_path, "r") as libs_file:
+        for lib_path in libs_file:
+            lib_path = lib_path.strip()
+            if lib_path.endswith(".gz"):
+                with gzip.open(lib_path, "rt") as lib_file:
+                    for line in lib_file:
+                        for instance in instances:
+                            if instance in line:
+                                matches.append((instance, lib_path))
+                                break
 
-# Step 2: Process lines
-while (my $line = <$fh_in>) {
-    chomp($line);
+    with open(output_matches_path, "w") as out_file:
+        for instance, lib_path in matches:
+            out_file.write(f"{instance} found in {lib_path}\n")
+    print(f"Found {len(matches)} matches. Results written to {output_matches_path}")
 
-    # Skip processing for lines that include excluded signals
-    my $is_excluded = 0;
-    foreach my $signal (keys %exclusions) {
-        if ($line =~ /\Q$signal\E/) {  # Check if the line contains the excluded signal
-            $is_excluded = 1;
-            last;
-        }
-    }
+def main():
+    if len(sys.argv) < 4:
+        print("Usage: python script.py <netlist_path> <libs_file_path> <output_dir>")
+        sys.exit(1)
 
-    if ($is_excluded) {
-        print $fh_proc "$line\n";  # Write excluded lines unchanged to processed file
-        next;
-    }
+    netlist_path = sys.argv[1]
+    libs_file_path = sys.argv[2]
+    output_dir = sys.argv[3]
 
-    # Replace backslashes with parentheses for other lines
-    $line =~ s/\\/\(/g;
-    print $fh_proc "$line\n";  # Write processed lines to processed file
-}
+    os.makedirs(output_dir, exist_ok=True)
 
-# Close files
-close $fh_in;
-close $fh_excl;
-close $fh_proc;
+    instances_output_path = os.path.join(output_dir, "instances.txt")
+    matches_output_path = os.path.join(output_dir, "matches.txt")
 
-print "Processing complete.\n";
-print "Excluded lines written to: $exclusion_file\n";
-print "Processed lines written to: $processed_file\n";
+    instances = parse_netlist(netlist_path, instances_output_path)
+    find_instances_in_libs(instances, libs_file_path, matches_output_path)
+
+if __name__ == "__main__":
+    main()
