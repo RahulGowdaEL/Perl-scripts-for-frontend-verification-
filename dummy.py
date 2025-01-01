@@ -24,6 +24,15 @@ def parse_netlist(netlist_path, output_instances_path):
     print(f"Extracted {len(instances)} instances to {output_instances_path}")
     return instances
 
+def is_gzip_file(file_path):
+    """Checks if the file is a valid gzip file."""
+    try:
+        with gzip.open(file_path, "rb") as f:
+            f.read(1)
+        return True
+    except OSError:
+        return False
+
 def find_instances_in_libs(instances, libs_file_path, output_matches_path):
     matches = []
 
@@ -41,10 +50,13 @@ def find_instances_in_libs(instances, libs_file_path, output_matches_path):
     with open(libs_file_path, "r") as libs_file:
         for lib_path in libs_file:
             lib_path = lib_path.strip()
-            if lib_path.endswith(".gz"):
-                process_file(lib_path, is_gz=True)
+            if os.path.exists(lib_path):
+                if lib_path.endswith(".gz") and is_gzip_file(lib_path):
+                    process_file(lib_path, is_gz=True)
+                else:
+                    process_file(lib_path, is_gz=False)
             else:
-                process_file(lib_path, is_gz=False)
+                print(f"File not found: {lib_path}")
 
     with open(output_matches_path, "w") as out_file:
         for instance, lib_path in matches:
