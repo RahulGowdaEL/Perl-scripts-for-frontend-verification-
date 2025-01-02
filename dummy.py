@@ -1,4 +1,30 @@
-import gzip
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Input and output file paths
+my $input_file = 'input.txt';
+my $output_file = 'output.txt';
+
+# Open the input file for reading
+open(my $in_fh, '<', $input_file) or die "Cannot open $input_file: $!";
+
+# Open the output file for writing
+open(my $out_fh, '>', $output_file) or die "Cannot open $output_file: $!";
+
+# Process each line from the input file
+while (my $line = <$in_fh>) {
+    chomp $line;
+    # Split the line by spaces and print each word on a new line
+    my @words = split /\s+/, $line;
+    print $out_fh join("\n", @words), "\n";
+}
+
+# Close file handles
+close $in_fh;
+close $out_fh;
+
+print "Processing complete. Output written to $output_file\n";import gzip
 import os
 import re
 import sys
