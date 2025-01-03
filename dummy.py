@@ -1,49 +1,40 @@
+#!/usr/bin/perl
 use strict;
 use warnings;
 
-# Prompt for input file
-print "Enter the input file name: ";
-chomp(my $input_file = <STDIN>);
-my $processed_file = "processed.v";
+# Define input, exclusion, and output file names
+my $input_file = 'in';
+my $exclusion_file = 'exc';
+my $output_file = 'out';
 
-# Hardcoded exclusion list (defined directly in the script)
-my %exclusions = (
-    '\\signal_ri[*]_s2' => 1,
-    '\\signal_vi[*]_e2' => 1,
-    '\\signal_q1[*]_r0' => 1,
-    # Add more signal names as needed
-);
+# Read exclusion signals from exclusion file
+open my $excl_fh, '<', $exclusion_file or die "Could not open exclusion file '$exclusion_file': $!\n";
+my %exclusion_signals;
+while (my $line = <$excl_fh>) {
+    chomp $line;
+    $exclusion_signals{$line} = 1;
+}
+close $excl_fh;
 
-# Open files
-open my $fh_in, '<', $input_file or die "Cannot open $input_file: $!";
-open my $fh_proc, '>', $processed_file or die "Cannot open $processed_file: $!";
+# Process the input file
+open my $in_fh,  '<', $input_file  or die "Could not open input file '$input_file': $!\n";
+open my $out_fh, '>', $output_file or die "Could not open output file '$output_file': $!\n";
 
-# Step 2: Process lines from the input file
-while (my $line = <$fh_in>) {
-    chomp($line);
+while (my $line = <$in_fh>) {
+    # Check if the line contains a signal
+    if ($line =~ /(\\)?([\w\[\]]+)/) {
+        my $signal = $2;
 
-    # Skip processing for lines that include excluded signals
-    my $is_excluded = 0;
-    foreach my $signal (keys %exclusions) {
-        if ($line =~ /\Q$signal\E/) {  # Check if the line contains the excluded signal
-            $is_excluded = 1;
-            last;
+        if (exists $exclusion_signals{$signal}) {
+            # Remove backslashes for exclusion signals
+            $line =~ s/\\//g;
         }
     }
-
-    if ($is_excluded) {
-        print $fh_proc "$line\n";  # Write excluded lines unchanged to processed file
-        next;
-    }
-
-    # Replace backslashes with parentheses for other lines
-    $line =~ s/\\/\(/g;
-    print $fh_proc "$line\n";  # Write processed lines to processed file
+    # Write the line as is
+    print $out_fh $line;
 }
 
-# Close files
-close $fh_in;
-close $fh_proc;
+close $in_fh;
+close $out_fh;
 
-print "Processing complete.\n";
-print "Processed lines written to: $processed_file\n";
+print "Processing complete. Output written to '$output_file'.\n";
