@@ -1,46 +1,49 @@
 use strict;
 use warnings;
 
-# File paths
-my $input_file = "input_file.v";
-my $exclusion_file = "exclusions.txt";
-my $processed_file = "processed_output.v";
+# Prompt for input file
+print "Enter the input file name: ";
+chomp(my $input_file = <STDIN>);
+my $processed_file = "processed.v";
+
+# Hardcoded exclusion list (defined directly in the script)
+my %exclusions = (
+    '\\signal_ri[*]_s2' => 1,
+    '\\signal_vi[*]_e2' => 1,
+    '\\signal_q1[*]_r0' => 1,
+    # Add more signal names as needed
+);
 
 # Open files
 open my $fh_in, '<', $input_file or die "Cannot open $input_file: $!";
-open my $fh_excl, '<', $exclusion_file or die "Cannot open $exclusion_file: $!";
 open my $fh_proc, '>', $processed_file or die "Cannot open $processed_file: $!";
 
-# Step 1: Read exclusion signals from the exclusion file into a hash
-my %exclusions;
-while (my $line = <$fh_excl>) {
-    chomp($line);
-    $exclusions{$line} = 1;  # Store exclusion signals as keys in the hash
-}
-
-# Step 2: Process the input file
+# Step 2: Process lines from the input file
 while (my $line = <$fh_in>) {
     chomp($line);
 
-    # Step 2.1: Check if the line contains a signal name in the exclusion list
+    # Skip processing for lines that include excluded signals
+    my $is_excluded = 0;
     foreach my $signal (keys %exclusions) {
-        # Match lines that contain backslash before the signal name (but not part of .\)
-        if ($line =~ /\\$signal(?!\w)/) {
-            # Ensure it is not a .\structure, where the backslash should not be removed
-            if ($line !~ /\\\./) {  # If there is no .\ before the backslash
-                $line =~ s/\\$signal/$signal/g;  # Remove backslash before signal name
-            }
-            last;  # Stop further processing for this line
+        if ($line =~ /\Q$signal\E/) {  # Check if the line contains the excluded signal
+            $is_excluded = 1;
+            last;
         }
     }
 
-    # Step 3: Print the modified or unchanged line to the output file
-    print $fh_proc "$line\n";
+    if ($is_excluded) {
+        print $fh_proc "$line\n";  # Write excluded lines unchanged to processed file
+        next;
+    }
+
+    # Replace backslashes with parentheses for other lines
+    $line =~ s/\\/\(/g;
+    print $fh_proc "$line\n";  # Write processed lines to processed file
 }
 
 # Close files
 close $fh_in;
-close $fh_excl;
 close $fh_proc;
 
-print "Processing complete. Output written to $processed_file.\n";
+print "Processing complete.\n";
+print "Processed lines written to: $processed_file\n";
