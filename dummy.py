@@ -3,11 +3,11 @@ use strict;
 use warnings;
 
 # Define input, exclusion, and output file names
-my $input_file = 'in';
+my $input_file    = 'in';
 my $exclusion_file = 'exc';
-my $output_file = 'out';
+my $output_file   = 'out';
 
-# Read exclusion signals from exclusion file
+# Read exclusion signals from the exclusion file
 open my $excl_fh, '<', $exclusion_file or die "Could not open exclusion file '$exclusion_file': $!\n";
 my %exclusion_signals;
 while (my $line = <$excl_fh>) {
@@ -22,10 +22,11 @@ open my $out_fh, '>', $output_file or die "Could not open output file '$output_f
 
 while (my $line = <$in_fh>) {
     foreach my $signal (keys %exclusion_signals) {
-        # Match exact signal names followed by brackets and remove the backslash
+        # Match exact signal followed by brackets and remove the backslash
         $line =~ s/\\($signal\[[^\]]+\])/$1/g;
-        # Remove backslash for the signal name without array index
-        $line =~ s/\\($signal)(?=\s*\()/ $1/g;  # This ensures the backslash is removed if followed by parentheses
+
+        # Match exact signal without brackets and remove the backslash
+        $line =~ s/\\($signal)/$1/g;
     }
     print $out_fh $line;
 }
