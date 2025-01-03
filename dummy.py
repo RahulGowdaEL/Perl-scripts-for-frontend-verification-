@@ -22,16 +22,16 @@ while (my $line = <$fh_excl>) {
 while (my $line = <$fh_in>) {
     chomp($line);
 
-    # Step 2.1: Check each exclusion signal and process the line if needed
+    # Step 2.1: Check if the line contains a signal name in the exclusion list
     foreach my $signal (keys %exclusions) {
-        if ($line =~ /\Q$signal\E/) {  # Match the exact signal name
-            # Only remove the backslash before the signal name if it's matched
-            $line =~ s/\\($signal)/$1/g;
-            last;  # Stop after first match and modification
+        # Only remove backslash for the exact signal match
+        if ($line =~ /\\$signal/) {  # Match the exact signal name with a backslash
+            $line =~ s/\\($signal)/$1/g;  # Remove the backslash only before the matched signal name
+            last;  # Stop further processing for this line
         }
     }
 
-    # Print the modified or unchanged line to the output file
+    # Step 3: Print the modified or unchanged line to the output file
     print $fh_proc "$line\n";
 }
 
