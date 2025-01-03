@@ -1,15 +1,10 @@
 use strict;
 use warnings;
 
-# Prompt user for input file, exclusion file, and output file
-print "Enter the input file name: ";
-chomp(my $input_file = <STDIN>);
-
-print "Enter the exclusion file name: ";
-chomp(my $exclusion_file = <STDIN>);
-
-print "Enter the output file name: ";
-chomp(my $output_file = <STDIN>);
+# Hardcoded file paths
+my $input_file     = 'input.v';       # Replace with your input file name
+my $exclusion_file = 'exclusions.txt'; # Replace with your exclusion file name
+my $output_file    = 'output.v';       # Replace with your desired output file name
 
 # Read exclusion file and build the exclusion hash
 open my $fh_exclusion, '<', $exclusion_file or die "Cannot open exclusion file: $!";
