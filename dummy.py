@@ -22,13 +22,16 @@ while (my $line = <$fh_excl>) {
 while (my $line = <$fh_in>) {
     chomp($line);
 
-    # Step 2.1: Match lines with the pattern '(\', but avoid lines with exclusion signals
-    if ($line =~ /\(\s*\\([\w\[\]\*\_]+)\s*\)/) {  # Check for the pattern `(\` with a signal name
-        my $signal_name = $1;
+    # Step 2.1: Match lines with the pattern '(\signal_name)' and check for exclusions
+    if ($line =~ /(\(\s*\\([\w\[\]\*\_]+)\s*\))/) {
+        my $full_match = $1;  # Full match (with parentheses and backslash)
+        my $signal_name = $2; # Signal name inside parentheses (without backslash)
 
         # If the signal is not in the exclusion list, remove the backslash
-        if (!exists $exclusions{$signal_name}) {
-            $line =~ s/\\($signal_name)/$1/g;
+        if (exists $exclusions{$signal_name}) {
+            # Signal name matches exclusion list, keep backslash
+        } else {
+            $line =~ s/\\($signal_name)/$1/g; # Replace only the backslash for non-excluded signals
         }
     }
 
