@@ -1,51 +1,39 @@
 use strict;
 use warnings;
 
-# Define file paths
-my $input_file     = 'input_file.v';        # Input Verilog file
-my $exclusion_file = 'exclusion_file.txt'; # File containing exclusion keywords
-my $output_file    = 'output_file.v';      # Output processed file
+# Hardcoded file paths
+my $input_file     = 'input.v';       # Replace with your input file name
+my $exclusion_file = 'exclusions.txt'; # Replace with your exclusion file name
+my $output_file    = 'output.v';       # Replace with your desired output file name
 
-# Read exclusions into a hash
-open my $fh_excl, '<', $exclusion_file or die "Cannot open $exclusion_file: $!";
-my %exclusions;
-while (<$fh_excl>) {
-    chomp;
-    $exclusions{$_} = 1;
-}
-close $fh_excl;
+# Read exclusion file and build the exclusion list
+open my $fh_exclusion, '<', $exclusion_file or die "Cannot open exclusion file: $!";
+my @exclusion_keywords = map { chomp; $_ } <$fh_exclusion>;
+close $fh_exclusion;
 
 # Process the input file
-open my $fh_in,  '<', $input_file  or die "Cannot open $input_file: $!";
-open my $fh_out, '>', $output_file or die "Cannot open $output_file: $!";
+open my $fh_in, '<', $input_file or die "Cannot open input file: $!";
+open my $fh_out, '>', $output_file or die "Cannot open output file: $!";
 
-while (<$fh_in>) {
-    my $line = $_;
+while (my $line = <$fh_in>) {
+    my $modified = $line;
 
-    # Check if the line matches any exclusion keyword
-    my $exclude_match = 0;
-    foreach my $keyword (keys %exclusions) {
-        if ($line =~ /\\$keyword/) { # Match lines with `\keyword`
-            $exclude_match = 1;
-            last;
+    foreach my $keyword (@exclusion_keywords) {
+        # Match and process set 1: Remove '\' for `.z (\keyword[...] )`
+        if ($modified =~ /\.z\s*\(\\$keyword\[(\d+)\]/) {
+            $modified =~ s/\.z\s*\(\\($keyword\[\d+\])/\( $1/g;
+        }
+
+        # Do not modify set 2: Lines containing `.\keyword[...]`
+        elsif ($modified =~ /\\$keyword_/) {
+            next; # Skip any modifications for set 2
         }
     }
 
-    if ($exclude_match) {
-        # Remove '\' for lines like Set 1
-        if ($line =~ /\.\w+\s*\(\\/) {
-            $line =~ s/\\//g; # Remove '\'
-        }
-        # Leave Set 2 lines intact (already matching exclusions)
-    } else {
-        # Remove '\' from other lines (general case)
-        $line =~ s/\\//g;
-    }
-
-    print $fh_out $line; # Write processed line to output
+    print $fh_out $modified;
 }
 
 close $fh_in;
 close $fh_out;
 
-print "Processing complete. Check $output_file for results.\n";
+print "Processing completed. Output written to $output_file.\n";
