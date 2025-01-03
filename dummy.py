@@ -1,40 +1,9 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
-
-# Define input, exclusion, and output file names
-my $input_file = 'in';
-my $exclusion_file = 'exc';
-my $output_file = 'out';
-
-# Read exclusion signals from exclusion file
-open my $excl_fh, '<', $exclusion_file or die "Could not open exclusion file '$exclusion_file': $!\n";
-my %exclusion_signals;
-while (my $line = <$excl_fh>) {
-    chomp $line;
-    $exclusion_signals{$line} = 1;
-}
-close $excl_fh;
-
-# Process the input file
-open my $in_fh,  '<', $input_file  or die "Could not open input file '$input_file': $!\n";
-open my $out_fh, '>', $output_file or die "Could not open output file '$output_file': $!\n";
-
-while (my $line = <$in_fh>) {
-    # Check if the line contains a signal
-    if ($line =~ /(\\)?([\w\[\]]+)/) {
-        my $signal = $2;
-
-        if (exists $exclusion_signals{$signal}) {
-            # Remove backslashes for exclusion signals
-            $line =~ s/\\//g;
-        }
-    }
-    # Write the line as is
-    print $out_fh $line;
-}
-
-close $in_fh;
-close $out_fh;
-
-print "Processing complete. Output written to '$output_file'.\n";
+    .a ( compile_HFSNET_50389 ) , .z ( \ddrss_icb_data[7] ) ) ;
+r0hd117_lnw3_tsmc_sr2_buft02p00 compile_PI_5_221574 ( .a ( net_aps_172892 ) , 
+    .z ( \ddrss_icb_data[6] ) ) ;
+r0hd117_lnw3_tsmc_sr2_buft02p00 compile_PI_6_221575 ( .a ( net_aps_172893 ) , 
+    .z ( \ddrss_icb_data[5] ) ) ;
+hm_dch_tile_hm_dch_tile_WC_D1_5693_1 CBDFT_WRP_hm_dch_tile_ddrss_icb_data_3__wrp0_71_out ( 
+    .cfi ( \ddrss_icb_data_0[3] ) , .cfo ( net_aps_172895 ) , 
+hm_dch_tile_hm_dch_tile_WC_D1_5456_1 CBDFT_WRP_hm_dch_tile_ddrss_icb_data_2__wrp0_72_out ( 
+    .cfi ( \ddrss_icb_data_0[2] ) , .cfo ( net_aps_172896 ) ,
