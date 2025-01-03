@@ -22,8 +22,10 @@ open my $out_fh, '>', $output_file or die "Could not open output file '$output_f
 
 while (my $line = <$in_fh>) {
     foreach my $signal (keys %exclusion_signals) {
-        # Ensure exact match for the exclusion signal followed by brackets
+        # Match exact signal names followed by brackets and remove the backslash
         $line =~ s/\\($signal\[[^\]]+\])/$1/g;
+        # Remove backslash for the signal name without array index
+        $line =~ s/\\($signal)(?=\s*\()/ $1/g;  # This ensures the backslash is removed if followed by parentheses
     }
     print $out_fh $line;
 }
