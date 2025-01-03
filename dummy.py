@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 
-# File definitions
 my $input_file     = 'hm_dch_tile_top.v';       
 my $exclusion_file = 'port_name_1'; 
 my $output_file    = "processed_output.v";
@@ -16,18 +15,25 @@ while (my $line = <$excl_fh>) {
 }
 close $excl_fh;
 
-# Process input file
+# Process the input file
 open my $in_fh,  '<', $input_file  or die "Could not open input file '$input_file': $!\n";
 open my $out_fh, '>', $output_file or die "Could not open output file '$output_file': $!\n";
 
 while (my $line = <$in_fh>) {
-    foreach my $signal (keys %exclusion_signals) {
-        # Handle standard case: Remove backslash for exclusion signals
-        $line =~ s/\\($signal\[\d+\])/$1/g;
-        
-        # Handle the special case: Don't modify backslashes within complex parentheses
-        $line =~ s/(\\\.$signal\[\d+\]\s*\(\s*.*?\\$signal\[\d+\].*?\))/$1/g;
+    # Skip modification for lines starting with exactly 4 spaces and matching the condition
+    if ($line =~ /^\s{4}\.\\(\w+)\[\d+\]/) {
+        my $signal = $1;
+        if (exists $exclusion_signals{$signal}) {
+            print $out_fh $line;
+            next;
+        }
     }
+    
+    # Modify lines for exclusion signals
+    foreach my $signal (keys %exclusion_signals) {
+        $line =~ s/\\($signal\[\d+\])/$1/g;
+    }
+    
     print $out_fh $line;
 }
 
