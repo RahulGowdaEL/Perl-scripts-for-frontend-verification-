@@ -24,9 +24,11 @@ while (my $line = <$fh_in>) {
 
     # Step 2.1: Check if the line contains a signal name in the exclusion list
     foreach my $signal (keys %exclusions) {
-        # Only remove backslash for the exact signal match with \ and not .\
+        # Only remove backslash for the exact signal match, ensuring it's not part of .\ structure
         if ($line =~ /\\$signal(?!\w)/) {  # Match only \signal_name (not .\ or similar)
-            $line =~ s/\\($signal)/$1/g;  # Remove the backslash only before the matched signal name
+            if ($line !~ /\\\./) {  # Ensure it is not part of .\signal_name
+                $line =~ s/\\($signal)/$1/g;  # Remove the backslash only before the matched signal name
+            }
             last;  # Stop further processing for this line
         }
     }
