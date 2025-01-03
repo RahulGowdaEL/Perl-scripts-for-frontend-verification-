@@ -37,14 +37,14 @@ while (my $line = <$fh_in>) {
         # Debug: Print extracted signal name
         print "Found signal: $signal_name\n";
 
-        # If the signal is in the exclusion list, we do nothing
+        # If the signal is in the exclusion list, remove the backslash
         if (exists $exclusions{$signal_name}) {
-            # Signal name matches exclusion list, keep backslash
-            print "Signal '$signal_name' is in the exclusion list, keeping backslash.\n";
-        } else {
-            # Replace backslash with nothing for non-excluded signals
+            # Remove backslash from the signal name
             $line =~ s/\\($signal_name)/($signal_name)/g;
-            print "Replaced backslash: $line\n";
+            print "Removed backslash: $line\n";
+        } else {
+            # If the signal is not in the exclusion list, keep the backslash
+            print "Signal '$signal_name' is not in the exclusion list, keeping backslash.\n";
         }
     }
 
