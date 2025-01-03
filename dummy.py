@@ -2,36 +2,42 @@ use strict;
 use warnings;
 
 # File paths
-my $input_file     = 'input.v';       # Replace with your input file name
-my $exclusion_file = 'exclusions.txt'; # Replace with your exclusion file name
-my $output_file    = 'output.v';       # Replace with your desired output file name
+my $input_file = "input_file.v";
+my $exclusion_file = "exclusions.txt";
+my $processed_file = "processed_output.v";
 
-# Load exclusions into a hash
-open my $fh_exclusion, '<', $exclusion_file or die "Cannot open exclusion file: $!";
+# Open files
+open my $fh_in, '<', $input_file or die "Cannot open $input_file: $!";
+open my $fh_excl, '<', $exclusion_file or die "Cannot open $exclusion_file: $!";
+open my $fh_proc, '>', $processed_file or die "Cannot open $processed_file: $!";
+
+# Step 1: Read exclusion signals from the exclusion file into a hash
 my %exclusions;
-while (my $line = <$fh_exclusion>) {
+while (my $line = <$fh_excl>) {
     chomp($line);
-    $line =~ s/^\s+|\s+$//g; # Trim whitespace
-    $exclusions{$line} = 1 if $line; # Store valid signals
+    $exclusions{$line} = 1;  # Store exclusion signals as keys in the hash
 }
-close $fh_exclusion;
 
-# Process input file
-open my $fh_in, '<', $input_file or die "Cannot open input file: $!";
-open my $fh_out, '>', $output_file or die "Cannot open output file: $!";
-
+# Step 2: Process the input file
 while (my $line = <$fh_in>) {
+    chomp($line);
+
+    # Check each exclusion signal, and remove backslash if the line contains the signal
     foreach my $signal (keys %exclusions) {
-        # Match signals with optional array indices and remove backslash
-        if ($line =~ /\b\\$signal(?:\[\d+\])?\b/) {
-            $line =~ s/\\($signal(?:\[\d+\])?)/$1/g;
-            last; # Stop further processing once a match is found
+        if ($line =~ /\Q$signal\E/) {  # Match the exact signal name
+            # Remove backslash before the signal
+            $line =~ s/\\(\Q$signal\E)/$signal/g;
+            last;  # If a match is found and processed, stop further checks
         }
     }
-    print $fh_out $line; # Write the processed or unmodified line
+
+    # Print the modified or unchanged line to the output file
+    print $fh_proc "$line\n";
 }
 
+# Close files
 close $fh_in;
-close $fh_out;
+close $fh_excl;
+close $fh_proc;
 
-print "Processing complete. Output written to $output_file.\n";
+print "Processing complete. Output written to $processed_file.\n";
