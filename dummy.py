@@ -21,8 +21,11 @@ open my $in_fh,  '<', $input_file  or die "Could not open input file '$input_fil
 open my $out_fh, '>', $output_file or die "Could not open output file '$output_file': $!\n";
 
 while (my $line = <$in_fh>) {
-    # Remove backslashes for exclusion signals only
-    $line =~ s/\\(\w+\[\d+\])/$1/g if grep { $line =~ /$_/ } keys %exclusion_signals;
+    # Process each exclusion signal separately to avoid partial matches
+    foreach my $signal (keys %exclusion_signals) {
+        # Match exact signal and remove backslashes only for those
+        $line =~ s/\\($signal\[\d+\])/$1/g;
+    }
     print $out_fh $line;
 }
 
