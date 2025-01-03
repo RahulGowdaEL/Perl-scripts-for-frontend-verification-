@@ -1,10 +1,34 @@
-    .\chm_apps_mid_1_TxDat_DataId[0] ( compile_HFSNET_46539 ) , 
-    .\chm_apps_mid_1_TxDat_DataId[1] ( compile_HFSNET_46537 ) , 
-r0hd286_lnw3_tsmc_buft07p50 compile_ZBUF_45_inst_242907 ( 
-    .a ( aps_rename_10711_ ) , .z ( \chm_apps_mid_1_TxDat_Data[80] ) ) ;
-r0hd286_lnw3_tsmc_buft07p50 compile_PI_1765_223334 ( .a ( net_aps_207453 ) , 
-    .z ( \chm_apps_mid_1_TxDat_Data[255] ) ) ;
-r0hd286_lnw3_tsmc_buft07p50 compile_PI_1766_223335 ( .a ( net_aps_207454 ) , 
-    .z ( \chm_apps_mid_1_TxDat_Data[254] ) ) ;
-r0hd286_lnw3_tsmc_buft07p50 compile_PI_1767_223336 ( .a ( net_aps_207455 ) , 
-    .z ( \chm_apps_mid_1_TxDat_Data[253] ) ) ;
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Define input, exclusion, and output file names
+my $input_file = 'in';
+my $exclusion_file = 'exc';
+my $output_file = 'out';
+
+# Read exclusion signals from exclusion file
+open my $excl_fh, '<', $exclusion_file or die "Could not open exclusion file '$exclusion_file': $!\n";
+my %exclusion_signals;
+while (my $line = <$excl_fh>) {
+    chomp $line;
+    $exclusion_signals{$line} = 1;
+}
+close $excl_fh;
+
+# Process the input file
+open my $in_fh,  '<', $input_file  or die "Could not open input file '$input_file': $!\n";
+open my $out_fh, '>', $output_file or die "Could not open output file '$output_file': $!\n";
+
+while (my $line = <$in_fh>) {
+    foreach my $signal (keys %exclusion_signals) {
+        # Use word boundaries to ensure exact matches and avoid partial matches
+        $line =~ s/\\($signal\[\d+\])\b/$1/g;
+    }
+    print $out_fh $line;
+}
+
+close $in_fh;
+close $out_fh;
+
+print "Processing complete. Output written to '$output_file'.\n";
