@@ -1,17 +1,28 @@
-r0hd117_lnw3_tsmc_buft03p00 compile_PI_7558_229127 ( .a ( net_aps_213246 ) , 
-    .z ( \TraceTargetNIU_Data[127] ) ) ;
-r0hd117_lnw3_tsmc_bufft04p00 compile_PI_7559_229128 ( .a ( net_aps_213247 ) , 
-    .z ( \TraceTargetNIU_Data[126] ) ) ;
-r0hd117_lnw3_tsmc_bufft04p00 compile_PI_7560_229129 ( .a ( net_aps_213248 ) , 
-    .z ( \TraceTargetNIU_Data[125] ) ) ;
-r0hd286_lnw3_tsmc_buft03p00 compile_PI_7561_229130 ( .a ( net_aps_213249 ) , 
-    .z ( \TraceTargetNIU_Data[124] ) ) ;
-r0hd286_lnw3_tsmc_buft03p00 compile_PI_7562_229131 ( .a ( net_aps_213250 ) , 
-    .z ( \TraceTargetNIU_Data[123] ) ) ;  
+use strict;
+use warnings;
 
+# Hardcoded file paths
+my $input_file     = 'input.v';       # Replace with your input file name
+my $exclusion_keyword = 'TraceTargetNIU_Data';  # Keyword to match for exclusion
+my $output_file    = 'output.v';       # Replace with your desired output file name
 
-    .\TraceTargetNIU_Data[97] ( \TraceTargetNIU_Data_0[97] ) , 
-    .\TraceTargetNIU_Data[98] ( \TraceTargetNIU_Data_0[98] ) , 
-    .\TraceTargetNIU_Data[99] ( \TraceTargetNIU_Data_0[99] ) , 
-    .\TraceTargetNIU_Data[9] ( \TraceTargetNIU_Data_0[9] ) , 
+# Open the input and output files
+open my $fh_in, '<', $input_file or die "Cannot open input file: $!";
+open my $fh_out, '>', $output_file or die "Cannot open output file: $!";
 
+while (my $line = <$fh_in>) {
+    # Process Set 1: Remove '\' for signal assignments
+    if ($line =~ /\.z\s*\(\s*\\$exclusion_keyword\[\d+\]\s*\)/) {
+        $line =~ s/\\($exclusion_keyword\[\d+\])/$1/g;  # Remove backslash
+    }
+    # Leave Set 2 unchanged (associative lines)
+    elsif ($line =~ /\.\\$exclusion_keyword\[\d+\]/) {
+        # No modification needed for associative lines
+    }
+    print $fh_out $line;  # Write the line to output
+}
+
+close $fh_in;
+close $fh_out;
+
+print "Processing completed. Output written to $output_file.\n";
