@@ -22,8 +22,8 @@ open my $out_fh, '>', $output_file or die "Could not open output file '$output_f
 
 while (my $line = <$in_fh>) {
     foreach my $signal (keys %exclusion_signals) {
-        # Use word boundaries to ensure exact matches and avoid partial matches
-        $line =~ s/\\($signal\[\d+\])\b/$1/g;
+        # Ensure exact match for the exclusion signal followed by brackets
+        $line =~ s/\\($signal\[[^\]]+\])/$1/g;
     }
     print $out_fh $line;
 }
