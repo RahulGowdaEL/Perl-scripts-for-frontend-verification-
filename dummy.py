@@ -1,248 +1,77 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
+OpenAI GPT-4o mini
 
-my $input_file     = 'hm_dch_tile_top.v';       
-my $exclusion_file = 'port_name_1'; 
-my $output_file    = "processed_output.v";
 
-# Load exclusion signals
-open my $excl_fh, '<', $exclusion_file or die "Could not open exclusion file '$exclusion_file': $!\n";
-my %exclusion_signals;
-while (my $line = <$excl_fh>) {
-    chomp $line;
-    $exclusion_signals{$line} = 1;
-}
-close $excl_fh;
 
-# Process the input file
-open my $in_fh,  '<', $input_file  or die "Could not open input file '$input_file': $!\n";
-open my $out_fh, '>', $output_file or die "Could not open output file '$output_file': $!\n";
+Hi 
+I want a python script where it takes a CSV file and compare the contents with another file
 
-while (my $line = <$in_fh>) {
-    # Preserve lines with leading spaces and matching `.\\signal_name[*]`
-    if ($line =~ /^\s*\.\\(\w+)\[\d+\]/) {
-        my $signal = $1;
-        if (exists $exclusion_signals{$signal}) {
-            print $out_fh $line;
-            next;
-        }
-    }
+I'll give one log from that the script should grep all the lines having
+Dhyan print freq = 440.0000 for the clk dpcc_cbc
 
-    # Remove backslash for exclusion signals in signal lists
-    foreach my $signal (keys %exclusion_signals) {
-        # Case 1: Match `.\\signal_name[*]`
-        $line =~ s/\\($signal\[\d+\])/$1/g;
+So the frequency number and clk can be anything 
+It should store in such a way to compare with CSV inputs
+
+In CSV there are freq nodes for particular clks
+1st ele will be clk name
+From 5th ele frequency range is there, which is defined in first line of the file
+So the clk frequency from the log grepped should match anyone of those keeping+or - 1 difference 
+
+avatar
+Certainly! Below is a Python script that accomplishes your requirements. It takes a log file and a CSV file, extracts the relevant frequency data from the log, and compares it with frequency ranges defined in the CSV file.
+
+python
+Copy
+import csv
+import re
+
+def read_csv(filename):
+    """Read the CSV file and store the frequency ranges in a dictionary."""
+    freq_data = {}
+    
+    with open(filename, mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        header = next(reader)  # Skip header line
         
-        # Case 2: Match `(\ \signal_name[*])` inside parentheses
-        $line =~ s/\( \\\($signal\[\d+\]\)/\( $1\)/g;
-    }
+        # Assuming frequency columns start from the 5th element (index 4)
+        for row in reader:
+            clk_name = row[0]
+            freq_ranges = [float(value) for value in row[4:] if value]  # Collect frequencies
+            
+            if clk_name not in freq_data:
+                freq_data[clk_name] = []
+            freq_data[clk_name].extend(freq_ranges)
+    
+    return freq_data
 
-    print $out_fh $line;
-}
+def extract_frequencies_from_log(log_filename):
+    """Extract desired frequencies from the log file."""
+    freq_pattern = re.compile(r'Dhyan print freq = ([\d.]+) for the clk (.+)')
+    frequencies = []
+    
+    with open(log_filename, 'r') as log_file:
+        for line in log_file:
+            match = freq_pattern.search(line)
+            if match:
+                freq = float(match.group(1))
+                clk = match.group(2).strip()
+                frequencies.append((clk, freq))
+    
+    return frequencies
 
-close $in_fh;
-close $out_fh;
+def compare_frequencies(frequencies, freq_data):
+    """Compare extracted frequencies with those from the CSV."""
+    for clk, freq in frequencies:
+        if clk in freq_data:
+            for range_freq in freq_data[clk]:
+                if abs(freq - range_freq) <= 1.0:  # Allow a difference of +/-1
+                    print(f"Match found: CLK '{clk}' with Frequency '{freq}' matches range '{range_freq}'.")
 
-print "Processing complete. Output written to '$output_file'.\n";
+def main(log_file, csv_file):
+    freq_data = read_csv(csv_file)
+    frequencies = extract_frequencies_from_log(log_file)
+    compare_frequencies(frequencies, freq_data)
 
-import gzip
-import os
-import re
-import sys
-
-def parse_netlist(file_path):
-    """Parses a single netlist file to extract instances."""
-    instance_pattern = re.compile(r"^\s{3}(\w+)\s+\w+\s*\(")
-    in_module_block = False
-    instances = set()
-
-    with open(file_path, "r") as netlist_file:
-        for line in netlist_file:
-            if "// Module instantiation" in line:
-                in_module_block = True
-            elif "endmodule" in line:
-                in_module_block = False
-            elif in_module_block:
-                match = instance_pattern.match(line)
-                if match:
-                    instances.add(match.group(1))
-
-    return instances
-
-def process_netlist_directory(input_dir, output_instances_path):
-    """Processes all netlist files in a directory to extract instances."""
-    all_instances = set()
-
-    for root, _, files in os.walk(input_dir):
-        for file in files:
-            file_path = os.path.join(root, file)
-            try:
-                print(f"Processing netlist file: {file_path}")
-                instances = parse_netlist(file_path)
-                all_instances.update(instances)
-            except Exception as e:
-                print(f"Error processing file {file_path}: {e}")
-
-    # Write all instances (with duplicates removed) to the output file
-    with open(output_instances_path, "w") as out_file:
-        out_file.write("\n".join(sorted(all_instances)))
-    print(f"Extracted {len(all_instances)} unique instances to {output_instances_path}")
-    return all_instances
-
-def is_gzip_file(file_path):
-    """Checks if the file is a valid gzip file."""
-    try:
-        with gzip.open(file_path, "rb") as f:
-            f.read(1)
-        return True
-    except OSError:
-        return False
-
-def find_instances_in_libs(instances, libs_file_path, output_matches_path):
-    """Finds instances in library files."""
-    matches = []
-
-    def process_file(file_path, is_gz=False):
-        try:
-            with (gzip.open(file_path, "rt") if is_gz else open(file_path, "r")) as file:
-                for line in file:
-                    for instance in instances:
-                        if instance in line:
-                            matches.append((instance, file_path))
-                            break
-        except Exception as e:
-            print(f"Error processing file {file_path}: {e}")
-
-    with open(libs_file_path, "r") as libs_file:
-        for lib_path in libs_file:
-            lib_path = lib_path.strip()
-            if os.path.exists(lib_path):
-                if lib_path.endswith(".gz") and is_gzip_file(lib_path):
-                    process_file(lib_path, is_gz=True)
-                else:
-                    process_file(lib_path, is_gz=False)
-            else:
-                print(f"File not found: {lib_path}")
-
-    with open(output_matches_path, "w") as out_file:
-        for instance, lib_path in matches:
-            out_file.write(f"{instance} ----> {lib_path}\n")
-    print(f"Found {len(matches)} matches. Results written to {output_matches_path}")
-
-def main():
-    if len(sys.argv) < 4:
-        print("Usage: python script.py <netlist_dir> <libs_file_path> <output_dir>")
-        sys.exit(1)
-
-    netlist_dir = sys.argv[1]
-    libs_file_path = sys.argv[2]
-    output_dir = sys.argv[3]
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    instances_output_path = os.path.join(output_dir, "instances.txt")
-    unique_instances_output_path = os.path.join(output_dir, "instances_without_dup.txt")
-    matches_output_path = os.path.join(output_dir, "matches.txt")
-
-    # Process all files in the netlist directory
-    all_instances = process_netlist_directory(netlist_dir, instances_output_path)
-
-    # Remove duplicates and write to a separate file
-    with open(unique_instances_output_path, "w") as out_file:
-        out_file.write("\n".join(sorted(all_instances)))
-    print(f"Removed duplicates. Unique instances written to {unique_instances_output_path}")
-
-    # Use unique instances for library file search
-    find_instances_in_libs(all_instances, libs_file_path, matches_output_path)
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-import gzip
-import os
-import re
-import sys
-
-def parse_netlist(netlist_path, output_instances_path):
-    instance_pattern = re.compile(r"^\s{3}(\w+)\s+\w+\s*\(")
-    in_module_block = False
-    instances = set()
-
-    with open(netlist_path, "r") as netlist_file:
-        for line in netlist_file:
-            if "// Module instantiation" in line:
-                in_module_block = True
-            elif "endmodule" in line:
-                in_module_block = False
-            elif in_module_block:
-                match = instance_pattern.match(line)
-                if match:
-                    instances.add(match.group(1))
-
-    with open(output_instances_path, "w") as out_file:
-        out_file.write("\n".join(sorted(instances)))
-    print(f"Extracted {len(instances)} instances to {output_instances_path}")
-    return instances
-
-def is_gzip_file(file_path):
-    """Checks if the file is a valid gzip file."""
-    try:
-        with gzip.open(file_path, "rb") as f:
-            f.read(1)
-        return True
-    except OSError:
-        return False
-
-def find_instances_in_libs(instances, libs_file_path, output_matches_path):
-    matches = []
-
-    def process_file(file_path, is_gz=False):
-        try:
-            with (gzip.open(file_path, "rt") if is_gz else open(file_path, "r")) as file:
-                for line in file:
-                    for instance in instances:
-                        if instance in line:
-                            matches.append((instance, file_path))
-                            break
-        except Exception as e:
-            print(f"Error processing file {file_path}: {e}")
-
-    with open(libs_file_path, "r") as libs_file:
-        for lib_path in libs_file:
-            lib_path = lib_path.strip()
-            if os.path.exists(lib_path):
-                if lib_path.endswith(".gz") and is_gzip_file(lib_path):
-                    process_file(lib_path, is_gz=True)
-                else:
-                    process_file(lib_path, is_gz=False)
-            else:
-                print(f"File not found: {lib_path}")
-
-    with open(output_matches_path, "w") as out_file:
-        for instance, lib_path in matches:
-            out_file.write(f"{instance} ----> {lib_path}\n")
-    print(f"Found {len(matches)} matches. Results written to {output_matches_path}")
-
-def main():
-    if len(sys.argv) < 4:
-        print("Usage: python script.py <netlist_path> <libs_file_path> <output_dir>")
-        sys.exit(1)
-
-    netlist_path = sys.argv[1]
-    libs_file_path = sys.argv[2]
-    output_dir = sys.argv[3]
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    instances_output_path = os.path.join(output_dir, "instances.txt")
-    matches_output_path = os.path.join(output_dir, "matches.txt")
-
-    instances = parse_netlist(netlist_path, instances_output_path)
-    find_instances_in_libs(instances, libs_file_path, matches_output_path)
-
-if __name__ == "__main__":
-    main()
+# Example usage:
+log_file_path = 'path/to/your/logfile.log'
+csv_file_path = 'path/to/your/frequencies.csv'
+main(log_file_path, csv_file_path)
