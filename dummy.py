@@ -2,6 +2,45 @@
 use strict;
 use warnings;
 
+# Define input and output files
+my $ref_file     = "ref.txt";        # Reference file
+my $current_file = "current.txt";    # Current file to compare
+my $output_file  = "missing_words.txt"; # Output file for missing words
+
+# Read reference words into a hash
+my %ref_words;
+open(my $rfh, '<', $ref_file) or die "Cannot open $ref_file: $!";
+while (<$rfh>) {
+    chomp;
+    $ref_words{$_} = 1;  # Store each word as a key in a hash
+}
+close($rfh);
+
+# Read current words and remove from hash
+open(my $cfh, '<', $current_file) or die "Cannot open $current_file: $!";
+while (<$cfh>) {
+    chomp;
+    delete $ref_words{$_} if exists $ref_words{$_};  # Remove found words
+}
+close($cfh);
+
+# Write missing words to output file
+open(my $ofh, '>', $output_file) or die "Cannot open $output_file: $!";
+foreach my $word (sort keys %ref_words) {
+    print $ofh "$word\n";
+}
+close($ofh);
+
+print "Missing words written to $output_file\n";
+
+
+
+
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
 # Input and output file
 my $input_file  = "power_log.txt";   # Change as needed
 my $output_file = "power_transitions.log";
