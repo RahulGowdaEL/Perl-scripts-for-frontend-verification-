@@ -1,21 +1,43 @@
-[6500500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch13_hm/VDDD_CH1_SS' transitioned to state 'DEFAULT_CORRUPT' with simstate 'CORRUPT'.
-[6500500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/VDDD_CH1_SS' transitioned to state 'DEFAULT_CORRUPT' with simstate 'CORRUPT'.
-[6500500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/VDDD_CH1_SS' transitioned to state 'DEFAULT_CORRUPT' with simstate 'CORRUPT'.
-[6700500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch13_hm/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6700500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6700500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[9900500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch13_hm/VDDD_CH1_SS' transitioned to state 'DIG_NOM' with simstate 'NORMAL'.
-[9900500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/VDDD_CH1_SS' transitioned to state 'DIG_NOM' with simstate 'NORMAL'.
-[9900500000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/VDDD_CH1_SS' transitioned to state 'DIG_NOM' with simstate 'NORMAL'.
-[6665293744000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch13_hm/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6665293744000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6665293744000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6674450000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch13_hm/VDDD_CH1_SS' transitioned to state 'off' with simstate 'CORRUPT'.
-[6674450000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/VDDD_CH1_SS' transitioned to state 'off' with simstate 'CORRUPT'.
-[6674450000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/VDDD_CH1_SS' transitioned to state 'off' with simstate 'CORRUPT'.
-[6883130000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch13_hm/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6883130000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
-[6883130000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/VDDD_CH1_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
+#!/usr/bin/perl
+use strict;
+use warnings;
 
-considering this power rail-> VDDD_CH1_SS, is changing from 
-CORRUPT->NORMAL->CORRUPT->NORMAL, this kind of notion should come for each and every rails from the input file, so script should search only LP_SS_STATE_CHANGE macthed lines, so that this can be achieved. 
+my $input_file = 'vcs_lpmsg.log';   
+my $output_file = 'voltage_log.txt';
+
+
+my %voltage_data;
+open(my $in_fh, '<', $input_file) or die "Could not open file '$input_file': $!";
+
+while (my $line = <$in_fh>) {
+    chomp($line);
+    
+    if ($line =~ /\[(\d+) fs\] \[INFO\] \[LP_PPN_VALUE_CHANGE\] Voltage of the primary power net '(.+?)' of power domain '(.+?)' changed from ([\d.]+ V) to ([\d.]+ V)/) {
+        my $timestamp = $1;       
+        my $net_name = $2;        
+        my $power_domain = $3;    
+        my $voltage_from = $4;    
+        my $voltage_to = $5;              
+        $voltage_data{$net_name}{$power_domain} //= [];
+        
+        my $transition = "$voltage_from --> $voltage_to";
+        unless (grep { $_ eq $transition } @{$voltage_data{$net_name}{$power_domain}}) {
+            push @{$voltage_data{$net_name}{$power_domain}}, $transition;
+        }
+    }
+}
+
+close($in_fh);
+
+open(my $out_fh, '>', $output_file) or die "Could not open file '$output_file': $!";
+foreach my $net (sort keys %voltage_data) {
+    foreach my $domain (sort keys %{$voltage_data{$net}}) {
+        print $out_fh "Primary Power Net: $net\n";
+        print $out_fh "Power Domain: $domain\n";
+        print $out_fh "Transitions:\n";
+        print $out_fh join(" --> ", map { (split / --> /)[0] } @{$voltage_data{$net}{$domain}}), "\n";
+        print $out_fh join(" --> ", map { (split / --> /)[1] } @{$voltage_data{$net}{$domain}}), "\n\n";
+    }
+}
+
+close($out_fh);
