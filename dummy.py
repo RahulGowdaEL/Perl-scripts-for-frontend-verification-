@@ -2,73 +2,51 @@
 use strict;
 use warnings;
 
-# Define input and output files
-my $ref_file     = "ref.txt";        # Reference file
-my $current_file = "current.txt";    # Current file to compare
-my $output_file  = "missing_words.txt"; # Output file for missing words
-
-# Read reference words into a hash
-my %ref_words;
-open(my $rfh, '<', $ref_file) or die "Cannot open $ref_file: $!";
-while (<$rfh>) {
-    chomp;
-    $ref_words{$_} = 1;  # Store each word as a key in a hash
-}
-close($rfh);
-
-# Read current words and remove from hash
-open(my $cfh, '<', $current_file) or die "Cannot open $current_file: $!";
-while (<$cfh>) {
-    chomp;
-    delete $ref_words{$_} if exists $ref_words{$_};  # Remove found words
-}
-close($cfh);
-
-# Write missing words to output file
-open(my $ofh, '>', $output_file) or die "Cannot open $output_file: $!";
-foreach my $word (sort keys %ref_words) {
-    print $ofh "$word\n";
-}
-close($ofh);
-
-print "Missing words written to $output_file\n";
+my $input_file = 'vcs_lpmsg.log';   
+my $output_file = 'voltage_log.txt';
 
 
+my %voltage_data;
+open(my $in_fh, '<', $input_file) or die "Could not open file '$input_file': $!";
 
-
-
-#!/usr/bin/perl
-use strict;
-use warnings;
-
-# Input and output file
-my $input_file  = "power_log.txt";   # Change as needed
-my $output_file = "power_transitions.log";
-
-# Hash to store state transitions for each power rail
-my %power_transitions;
-
-# Open input log file
-open my $fh, '<', $input_file or die "Cannot open $input_file: $!";
-while (<$fh>) {
-    if (/LP_SS_STATE_CHANGE.*Supply Set '(.*?)' transitioned to state '(.*?)'/) {
-        my ($rail, $state) = ($1, $2);
-
-        # Normalize rail name to remove full hierarchy
-        $rail =~ s{.*/}{};  # Keep only last part
-
-        # Track state transitions
-        push @{ $power_transitions{$rail} }, $state 
-            if !@{ $power_transitions{$rail} } || $power_transitions{$rail}[-1] ne $state;
+while (my $line = <$in_fh>) {
+    chomp($line);
+    
+    if ($line =~ /\[(\d+) fs\] \[INFO\] \[LP_PPN_VALUE_CHANGE\] Voltage of the primary power net '(.+?)' of power domain '(.+?)' changed from ([\d.]+ V) to ([\d.]+ V)/) {
+        my $timestamp = $1;       
+        my $net_name = $2;        
+        my $power_domain = $3;    
+        my $voltage_from = $4;    
+        my $voltage_to = $5;              
+        $voltage_data{$net_name}{$power_domain} //= [];
+        
+        my $transition = "$voltage_from --> $voltage_to";
+        unless (grep { $_ eq $transition } @{$voltage_data{$net_name}{$power_domain}}) {
+            push @{$voltage_data{$net_name}{$power_domain}}, $transition;
+        }
     }
 }
-close $fh;
 
-# Write output file
-open my $out, '>', $output_file or die "Cannot write to $output_file: $!";
-foreach my $rail (sort keys %power_transitions) {
-    print $out "$rail: " . join(" --> ", @{ $power_transitions{$rail} }) . "\n";
+close($in_fh);
+
+open(my $out_fh, '>', $output_file) or die "Could not open file '$output_file': $!";
+foreach my $net (sort keys %voltage_data) {
+    foreach my $domain (sort keys %{$voltage_data{$net}}) {
+        print $out_fh "Primary Power Net: $net\n";
+        print $out_fh "Power Domain: $domain\n";
+        print $out_fh "Transitions:\n";
+        print $out_fh join(" --> ", map { (split / --> /)[0] } @{$voltage_data{$net}{$domain}}), "\n";
+        print $out_fh join(" --> ", map { (split / --> /)[1] } @{$voltage_data{$net}{$domain}}), "\n\n";
+    }
 }
-close $out;
 
-print "Power transitions saved to $output_file\n";
+close($out_fh);
+print "Voltage transitions with power domains have been written to '$output_file'.\n";
+
+instead of the voltages i want the State changes whih will be got by using 
+[9458890003000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_ddr_slice_center/u_dpcc/u_dpcc_plls/VDD_CX_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
+[9458890003000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch02_hm/u_ddrss_ch2/u_mach9_hm/VDD_CX_SS' transitioned to state 'pmux_transition_coa' with simstate 'CORRUPT_ON_ACTIVITY'.
+[7700504000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch02_hm/u_ddrss_ch2/u_mach9_hm/VDD_CX_SS' transitioned to state 'DEFAULT_NORMAL' with simstate 'NORMAL'.
+[6674450000000 fs] [INFO] [LP_SS_STATE_CHANGE] Supply Set 'ddr_ss_synthetic_top_wrapper_dv/u_ddr_ss_synthetic_top_wrapper_dut_0/u_ddr_slice_hm_0/u_gen_slice_ddr_slice_ch/u_ddr_slice_ch/u_ddrss_ch02_hm/u_ddrss_ch2/u_mach9_hm/u_lpi_lb/VDD_CX_SS' transitioned to state 'off' with simstate 'CORRUPT'.
+
+follow the above coding method and after only for the state change.
