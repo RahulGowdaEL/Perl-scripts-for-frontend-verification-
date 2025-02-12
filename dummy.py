@@ -2,6 +2,69 @@
 use strict;
 use warnings;
 
+# Input and output file names
+my $input_file  = 'vcs_lpmsg.log';
+my $output_file = 'state_changes_log.txt';
+
+# Hash to store state transition data
+my %state_data;
+
+# Open the log file for reading
+open(my $in_fh, '<', $input_file) or die "Could not open file '$input_file': $!";
+
+while (my $line = <$in_fh>) {
+    chomp($line);
+    
+    # Match state change log format
+    if ($line =~ /\[(\d+) fs\] \[INFO\] \[LP_SS_STATE_CHANGE\] Supply Set '(.+?)' transitioned to state '(.+?)' with simstate '(.+?)'/) {
+        my $timestamp  = $1;
+        my $supply_set = $2;
+        my $state      = $3;
+        my $simstate   = $4;
+        
+        # Store state changes per supply set
+        $state_data{$supply_set} //= [];
+        my $transition = "$state [$simstate]";
+        
+        # Avoid duplicate transitions
+        unless (grep { $_ eq $transition } @{$state_data{$supply_set}}) {
+            push @{$state_data{$supply_set}}, $transition;
+        }
+    }
+}
+
+close($in_fh);
+
+# Open output file for writing
+open(my $out_fh, '>', $output_file) or die "Could not open file '$output_file': $!";
+
+# Print collected state transitions
+foreach my $supply_set (sort keys %state_data) {
+    print $out_fh "Supply Set: $supply_set\n";
+    print $out_fh "State Transitions:\n";
+    
+    # Separate transitions into "From" and "To" lists for readability
+    my @from_states = map { (split / \[/)[0] } @{$state_data{$supply_set}};
+    my @to_states   = map { (split / \[/)[1] } @{$state_data{$supply_set}};
+
+    print $out_fh join(" --> ", @from_states), "\n";
+    print $out_fh join(" --> ", @to_states), "\n\n";
+}
+
+close($out_fh);
+print "State transitions have been written to '$output_file'.\n";
+
+
+
+
+
+
+
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
 my $input_file = 'vcs_lpmsg.log';   
 my $output_file = 'voltage_log.txt';
 
