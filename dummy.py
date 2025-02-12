@@ -2,6 +2,45 @@
 use strict;
 use warnings;
 
+# Input file names
+my $file1 = 'file1.txt';   # Source file
+my $file2 = 'file2.txt';   # Comparison file
+my $output_file = 'difference.txt';  # Output file
+
+# Hash to store words from file2
+my %words_in_file2;
+
+# Read file2 and store words in a hash
+open(my $fh2, '<', $file2) or die "Could not open '$file2': $!";
+while (my $line = <$fh2>) {
+    chomp($line);
+    $words_in_file2{$line} = 1;  # Store as hash keys for quick lookup
+}
+close($fh2);
+
+# Open output file for writing
+open(my $out_fh, '>', $output_file) or die "Could not open '$output_file': $!";
+
+# Read file1 and check for missing words
+open(my $fh1, '<', $file1) or die "Could not open '$file1': $!";
+while (my $line = <$fh1>) {
+    chomp($line);
+    # If the word is not in file2, write to output
+    print $out_fh "$line\n" unless exists $words_in_file2{$line};
+}
+close($fh1);
+close($out_fh);
+
+print "Words present in '$file1' but not in '$file2' have been written to '$output_file'.\n";
+
+
+
+
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
 # Input and output file names
 my $input_file  = 'vcs_lpmsg.log';
 my $output_file = 'state_changes_log.txt';
