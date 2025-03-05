@@ -1,3 +1,7 @@
+./script_name.pl -input_details=/path/to/input_details.txt -run_path=/path/to/test_results
+
+
+
 #!/usr/bin/perl
 
 use Getopt::Long;
