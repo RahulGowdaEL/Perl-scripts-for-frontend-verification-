@@ -1,11 +1,5 @@
 #!/usr/bin/perl
 
-######################################################################
-### Author      :: Robin Garg (robingar@qti.qualcomm.com)
-### Description :: Script to capture test status for testcases 
-### Usage		:: script -run_path <regress_area>
-######################################################################
-
 use Getopt::Long;
 use constant;
 use FileHandle;
