@@ -1,3 +1,7 @@
+
+
+if (($String =~ /internal_channel/ or $String =~ /internal1_channel/ or $String =~ /internal2_channel/) and $String =~ /MASTER/) {
+
 my $file1=$ARGV[0];
 my $file2=$ARGV[1];
 open (file_1,$file1) or die "Couldn't open the file" ;
