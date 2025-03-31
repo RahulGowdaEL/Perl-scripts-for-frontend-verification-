@@ -1,3 +1,44 @@
+
+#!/bin/bash
+
+log_file="simulation.log"  # Change to your actual simulation log file
+input_file="lines_to_track.txt"  # File containing lines to monitor
+output_file="timing_report.log"
+
+# Ensure input file exists
+if [[ ! -f "$input_file" ]]; then
+    echo "Error: Input file '$input_file' not found!"
+    exit 1
+fi
+
+echo "Monitoring log file: $log_file" > "$output_file"
+echo "Tracking lines from: $input_file" >> "$output_file"
+
+declare -A timestamps  # Associative array to store timestamps
+
+# Read lines to track into an array
+mapfile -t lines_to_track < "$input_file"
+
+# Monitor log in real-time
+tail -F "$log_file" | while read -r line; do
+    for key in "${lines_to_track[@]}"; do
+        if [[ "$line" == *"$key"* ]]; then
+            current_time=$(date +%s)
+            echo "Detected '$key' at $(date)" >> "$output_file"
+            
+            if [[ -v timestamps["$key"] ]]; then
+                previous_time=${timestamps["$key"]}
+                elapsed_time=$((current_time - previous_time))
+                echo "Time since last '$key': $elapsed_time seconds" >> "$output_file"
+            fi
+            
+            timestamps["$key"]=$current_time
+        fi
+    done
+done
+
+
+
 // Code your testbench here
 // or browse Examples
 module test();
