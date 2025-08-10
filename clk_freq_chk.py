@@ -30,8 +30,8 @@ def parse_log_file(log_file_path):
     
     return clock_data
 
-def check_frequency_violations(clock_data, xls_file_path):
-    """Check if any clock frequency violates the max frequency from Excel"""
+def check_exact_frequency_matches(clock_data, xls_file_path):
+    """Check if any clock frequency doesn't exactly match allowed frequencies from Excel"""
     # Read Excel file
     df = pd.read_excel(xls_file_path)
     
@@ -49,21 +49,23 @@ def check_frequency_violations(clock_data, xls_file_path):
         # Find clock in Excel
         clock_row = df[df['Name'] == clk_name]
         if not clock_row.empty:
-            # Get the max frequency for all types
-            max_freq_columns = [
+            # Get all allowed frequencies for this clock
+            allowed_freq_columns = [
                 'Max LOWSVS', 'Max SVS', 'Max SVS_L1', 'Max NOM',
                 'Max TURBO', 'Max TURBO_L1', 'Max TURBO_L3', 'Max TURBO_L4'
             ]
             
-            # Get the maximum allowed frequency (max of all max frequencies)
-            max_allowed = clock_row[max_freq_columns].max(axis=1).values[0]
+            # Get all allowed frequencies (remove empty/NAN values)
+            allowed_freqs = [f for f in clock_row[allowed_freq_columns].values.flatten() 
+                            if pd.notna(f) and f != '']
             
-            if freq > max_allowed:
+            # Check if current frequency is exactly one of the allowed frequencies
+            if freq not in allowed_freqs:
                 violations.append({
                     'clk_name': clk_name,
                     'time_ns': time_ns,
                     'measured_freq': freq,
-                    'max_allowed': max_allowed
+                    'allowed_frequencies': sorted(list(set(allowed_freqs)))  # Remove duplicates
                 })
     
     return violations
@@ -76,11 +78,11 @@ def main():
     clock_data = parse_log_file(log_file_path)
     
     # Check for violations
-    violations = check_frequency_violations(clock_data, xls_file_path)
+    violations = check_exact_frequency_matches(clock_data, xls_file_path)
     
     # Print results
     if not violations:
-        print("No clock frequency violations found!")
+        print("All clock frequencies match exactly with allowed frequencies!")
     else:
         print(f"Found {len(violations)} clock frequency violations:")
         print("-" * 80)
@@ -89,7 +91,7 @@ def main():
             print(f"Clock: {violation['clk_name']}")
             print(f"Time: {violation['time_ns']} ns")
             print(f"Measured frequency: {violation['measured_freq']} MHz")
-            print(f"Maximum allowed: {violation['max_allowed']} MHz")
+            print(f"Allowed frequencies: {violation['allowed_frequencies']} MHz")
             print("-" * 80)
 
 if __name__ == "__main__":
