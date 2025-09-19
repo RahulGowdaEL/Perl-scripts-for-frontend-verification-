@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
 import json
 import random
 from typing import Dict, List, Optional, Callable, Any
 import re
 import datetime
+import sys
+import os
 
 class Chatbot:
     def __init__(self, config_path: str = "config.json"):
@@ -10,21 +13,30 @@ class Chatbot:
         Initialize the chatbot with configuration
         :param config_path: Path to JSON configuration file
         """
+        print("Initializing chatbot...")
         self.load_config(config_path)
         self.context = {}
         self.history = []
         self.plugins = self.load_plugins()
         self.setup_initial_state()
+        print(f"Chatbot '{self.config.get('name', 'CustomBot')}' ready!")
+        print("Type 'quit' or 'exit' to end the conversation.")
         
     def load_config(self, config_path: str) -> None:
         """Load configuration from JSON file"""
         try:
             with open(config_path, 'r') as f:
                 self.config = json.load(f)
+            print(f"Configuration loaded from {config_path}")
         except FileNotFoundError:
+            print(f"Config file {config_path} not found. Using default configuration.")
             self.config = {
                 "name": "CustomBot",
-                "default_responses": ["I'm not sure how to respond to that."],
+                "default_responses": [
+                    "I'm not sure how to respond to that.",
+                    "Could you please rephrase that?",
+                    "I'm still learning. Can you ask me something else?"
+                ],
                 "plugins": [],
                 "personality": {
                     "tone": "friendly",
@@ -32,6 +44,9 @@ class Chatbot:
                 },
                 "scripts": {}
             }
+        except json.JSONDecodeError as e:
+            print(f"Error parsing config file: {e}")
+            sys.exit(1)
     
     def load_plugins(self) -> Dict[str, Callable]:
         """Load and initialize plugins"""
@@ -46,10 +61,20 @@ class Chatbot:
         # Load custom plugins from config
         for plugin_name in self.config.get('plugins', []):
             try:
-                module = __import__(f"plugins.{plugin_name}", fromlist=['handle'])
+                # For Linux, we need to ensure the plugins directory is in the path
+                if not os.path.exists(f"plugins/{plugin_name}.py"):
+                    print(f"Plugin file plugins/{plugin_name}.py not found")
+                    continue
+                    
+                # Add the plugins directory to Python path
+                sys.path.insert(0, 'plugins')
+                
+                # Import the plugin module
+                module = __import__(plugin_name)
                 plugins[plugin_name] = module.handle
-            except ImportError:
-                print(f"Warning: Plugin {plugin_name} not found")
+                print(f"Loaded plugin: {plugin_name}")
+            except ImportError as e:
+                print(f"Warning: Failed to load plugin {plugin_name}: {e}")
         
         return plugins
     
@@ -67,6 +92,13 @@ class Chatbot:
         :param user_input: User's message
         :return: Bot's response
         """
+        # Clean the input
+        user_input = user_input.strip()
+        
+        # Check for exit commands
+        if user_input.lower() in ['quit', 'exit', 'bye', 'goodbye']:
+            return "EXIT"
+        
         # Add to history
         self.history.append({'user': user_input, 'time': datetime.datetime.now()})
         
@@ -159,110 +191,140 @@ class Chatbot:
     # Built-in plugin handlers
     def handle_greetings(self, user_input: str, context: Dict) -> Optional[str]:
         """Handle greeting messages"""
-        greetings = ["hi", "hello", "hey", "greetings"]
+        greetings = ["hi", "hello", "hey", "greetings", "howdy"]
         if any(word in user_input.lower() for word in greetings):
             name = context['user']['name'] or "there"
             return random.choice([
                 f"Hello {name}! How can I help you today?",
                 f"Hi {name}! What can I do for you?",
-                f"Greetings {name}! How may I assist you?"
+                f"Greetings {name}! How may I assist you?",
+                f"Hey {name}! How can I help?"
             ])
         return None
     
     def handle_farewell(self, user_input: str, context: Dict) -> Optional[str]:
         """Handle farewell messages"""
-        farewells = ["bye", "goodbye", "see you", "farewell"]
+        farewells = ["bye", "goodbye", "see you", "farewell", "see ya"]
         if any(word in user_input.lower() for word in farewells):
             name = context['user']['name'] or "friend"
             return random.choice([
                 f"Goodbye {name}! Have a great day!",
                 f"See you later {name}!",
-                f"Farewell {name}! Come back anytime!"
+                f"Farewell {name}! Come back anytime!",
+                f"Bye {name}! Take care!"
             ])
         return None
     
     def handle_time_query(self, user_input: str, context: Dict) -> Optional[str]:
         """Handle time-related queries"""
-        time_phrases = ["what time is it", "current time", "what's the time"]
+        time_phrases = ["what time is it", "current time", "what's the time", "time please"]
         if any(phrase in user_input.lower() for phrase in time_phrases):
             now = datetime.datetime.now()
-            return f"The current time is {now.strftime('%H:%M')}."
+            return f"The current time is {now.strftime('%H:%M:%S')}."
         return None
     
     def handle_help(self, user_input: str, context: Dict) -> Optional[str]:
         """Handle help requests"""
         if "help" in user_input.lower():
             return "I can help with various tasks. You can ask me about time, or say hello! " \
-                   "My capabilities can be extended through plugins and scripts."
+                   "My capabilities can be extended through plugins and scripts. " \
+                   "Try saying 'hello', 'what time is it?', or 'I want to order a pizza'."
         return None
     
     # External integration methods
     def call_external_api(self, url: str, params: Dict) -> Any:
         """Make API calls to external services"""
         # Implementation would use requests or similar library
+        print(f"[DEBUG] Would call API: {url} with params: {params}")
         pass
     
     def store_data(self, key: str, value: Any) -> None:
         """Store data persistently"""
         # Implementation would use database or storage system
+        print(f"[DEBUG] Would store data: {key} = {value}")
         pass
 
 
-{
-    "name": "CustomBot",
-    "default_responses": [
-        "I'm not sure I understand. Could you rephrase that?",
-        "That's an interesting point. Could you tell me more?",
-        "I'm still learning. Can you ask me something else?"
-    ],
-    "plugins": ["weather", "calculator"],
-    "personality": {
-        "tone": "professional",
-        "response_length": "medium"
-    },
-    "scripts": {
-        "order_pizza": {
-            "patterns": [
-                "I want to order a pizza",
-                "can I get a pizza",
-                "pizza delivery"
+def main():
+    """Main function to run the chatbot"""
+    # Check if config file exists, create if not
+    if not os.path.exists("config.json"):
+        print("Creating default config file...")
+        default_config = {
+            "name": "CustomBot",
+            "default_responses": [
+                "I'm not sure how to respond to that.",
+                "Could you please rephrase that?",
+                "I'm still learning. Can you ask me something else?"
             ],
-            "responses": [
-                "Great! What size pizza would you like? (small, medium, large)",
-                "I can help with pizza orders. What size are you thinking?"
-            ],
-            "actions": [
-                {
-                    "type": "set_context",
-                    "key": "conversation.topic",
-                    "value": "pizza_order"
-                },
-                {
-                    "type": "set_context",
-                    "key": "conversation.step",
-                    "value": 1
+            "plugins": [],
+            "personality": {
+                "tone": "friendly",
+                "response_length": "medium"
+            },
+            "scripts": {
+                "order_pizza": {
+                    "patterns": [
+                        "I want to order a pizza",
+                        "can I get a pizza",
+                        "pizza delivery",
+                        "order pizza"
+                    ],
+                    "responses": [
+                        "Great! What size pizza would you like? (small, medium, large)",
+                        "I can help with pizza orders. What size are you thinking?",
+                        "Pizza! Excellent choice. What size would you like?"
+                    ],
+                    "actions": [
+                        {
+                            "type": "set_context",
+                            "key": "conversation.topic",
+                            "value": "pizza_order"
+                        },
+                        {
+                            "type": "set_context",
+                            "key": "conversation.step",
+                            "value": 1
+                        }
+                    ],
+                    "context_updates": {
+                        "current_order": {"item": "pizza", "stage": "size"}
+                    }
                 }
-            ],
-            "context_updates": {
-                "current_order": {"item": "pizza", "stage": "size"}
             }
-        },
-        "book_appointment": {
-            "patterns": [
-                "I need an appointment",
-                "schedule a meeting",
-                "book a time"
-            ],
-            "responses": [
-                "I can help schedule appointments. What day works for you?",
-                "Let's book that. What's your preferred date?"
-            ],
-            "actions": [
-                {
-                    "type": "call_api",
-                    "url": "/api/calendar/check_availability"
-                }
-            ]
         }
-    }
-}
+        
+        with open("config.json", "w") as f:
+            json.dump(default_config, f, indent=2)
+    
+    # Initialize and run the chatbot
+    bot = Chatbot()
+    
+    # Interactive loop
+    while True:
+        try:
+            user_input = input("> ").strip()
+            if not user_input:
+                continue
+                
+            response = bot.process_input(user_input)
+            
+            if response == "EXIT":
+                print("Goodbye!")
+                break
+                
+            print(response)
+            
+        except KeyboardInterrupt:
+            print("\n\nGoodbye!")
+            break
+        except EOFError:
+            print("\n\nGoodbye!")
+            break
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            print("Please try again.")
+
+
+if __name__ == "__main__":
+    main()
