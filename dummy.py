@@ -1,15 +1,49 @@
-python3 chatbot.py
-Initializing VLSI Engineer Chatbot...
-Configuration loaded from vlsi_config.json
-Traceback (most recent call last):
-  File "chatbot.py", line 513, in <module>
-    main()
-  File "chatbot.py", line 484, in main
-    bot = VLSIChatbot()
-  File "chatbot.py", line 22, in __init__
-    self.plugins = self.load_plugins()
-  File "chatbot.py", line 97, in load_plugins
-    module = __import__(plugin_name)
-  File "plugins/synthesis.py", line 5, in <module>
-    def handle(user_input: str, context: dict) -> Optional[str]:
-NameError: name 'Optional' is not defined
+{
+    "name": "VLSI_Bot",
+    "default_responses": [
+        "I'm not sure how to respond to that.",
+        "Could you please rephrase that VLSI-related question?",
+        "I'm specialized in VLSI tasks. Can you ask me something related to chip design?"
+    ],
+    "plugins": [
+        "synthesis",
+        "simulation",
+        "layout",
+        "verification",
+        "power_analysis",
+        "timing_analysis"
+    ],
+    "personality": {
+        "tone": "technical",
+        "response_length": "detailed"
+    },
+    "scripts": {
+        "run_synthesis": {
+            "patterns": [
+                "run synthesis",
+                "start synthesis",
+                "synthesize design"
+            ],
+            "responses": [
+                "Running synthesis with default constraints...",
+                "Starting synthesis process...",
+                "Initiating design compilation..."
+            ],
+            "actions": [
+                {
+                    "type": "run_script",
+                    "script_path": "scripts/synthesis.sh",
+                    "args": ["-design", "my_design"]
+                }
+            ]
+        }
+    },
+    "tools_path": {
+        "dc_shell": "/synopsys/dc/bin/dc_shell",
+        "vcs": "/synopsys/vcs/bin/vcs",
+        "icc2": "/synopsys/icc2/bin/icc2",
+        "pt": "/synopsys/pt/bin/pt_shell",
+        "perl": "/usr/bin/perl",
+        "python": "/usr/bin/python3"
+    }
+}
